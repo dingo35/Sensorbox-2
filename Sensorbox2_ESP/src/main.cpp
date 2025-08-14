@@ -166,6 +166,11 @@ void Timer2S(void * parameter) {
             MQTTclient.publish(MQTTprefix + "/MainsCurrentL1", MainsMeterIrms[0], false, 0);
             MQTTclient.publish(MQTTprefix + "/MainsCurrentL2", MainsMeterIrms[1], false, 0);
             MQTTclient.publish(MQTTprefix + "/MainsCurrentL3", MainsMeterIrms[2], false, 0);
+            if (lockedToP1) { //we don't have volts from CT
+                MQTTclient.publish(MQTTprefix + "/MainsVoltageL1", Volts[0], false, 0);
+                MQTTclient.publish(MQTTprefix + "/MainsVoltageL2", Volts[1], false, 0);
+                MQTTclient.publish(MQTTprefix + "/MainsVoltageL3", Volts[2], false, 0);
+            }
     #endif
             if (SmartEVSEHost != "") {                                              // we have a configured wifi host
                 if (SmartEVSEHost.substring(0,4) == "http") {                       // not MQTT, but http[s]
@@ -940,6 +945,14 @@ void SetupMQTTClient() {
         announce("Mains Current L2", "sensor");
         announce("Mains Current L3", "sensor");
 //    }
+
+    if (lockedToP1) { //we don't have volts from CT
+        //optional_payload = jsna("device_class","voltage") + jsna("unit_of_measurement","V") + jsna("value_template", R"({{ value | int / 10 }})");
+        optional_payload = jsna("device_class","voltage") + jsna("unit_of_measurement","V") + jsna("value_template", R"({{ value | int }})");
+        announce("Mains Voltage L1", "sensor");
+        announce("Mains Voltage L2", "sensor");
+        announce("Mains Voltage L3", "sensor");
+    }
 
     //set the parameters for and announce diagnostic sensor entities:
     optional_payload = jsna("entity_category","diagnostic");
