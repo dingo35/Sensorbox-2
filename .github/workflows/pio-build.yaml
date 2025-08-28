@@ -84,14 +84,11 @@ jobs:
           openssl dgst -sign "$secret_file" -keyform PEM -sha256 -out firmware.sign -binary ./Sensorbox2_ESP/.pio/build/release/firmware.bin
           # throw it all in one file
           cat firmware.sign ./Sensorbox2_ESP/.pio/build/release/firmware.bin > ./Sensorbox2_ESP/.pio/build/release/firmware.signed.bin
+          # save .bin files to directory because v4 upload-artifact@v4 can no longer add files to an existing artifact; so much for efficiency :-(
+          mkdir ./Sensorbox2_ESP/distribution
+          mv ./Sensorbox2_ESP/.pio/build/release/*.bin ./Sensorbox2_ESP/distribution
           # Remove the temporary file
           rm -f "$secret_file"
-      - name: Upload firmware.bin
-        uses: actions/upload-artifact@v3
-        with:
-          name: dists_zip
-          path: ./Sensorbox2_ESP/.pio/build/release/*.bin
-          retention-days: 10
       - name: Build debug version
         env:
           super_secret: ${{ secrets.SECRET_RSA_KEY }}
@@ -107,14 +104,19 @@ jobs:
           cat firmware.sign ./Sensorbox2_ESP/.pio/build/release/firmware.bin > ./Sensorbox2_ESP/.pio/build/release/firmware.signed.bin
           # Remove the temporary file
           rm -f "$secret_file"
-          mv ./Sensorbox2_ESP/.pio/build/release/firmware.bin ./Sensorbox2_ESP/.pio/build/release/firmware.debug.bin
-          mv ./Sensorbox2_ESP/.pio/build/release/firmware.signed.bin ./Sensorbox2_ESP/.pio/build/release/firmware.debug.signed.bin
-      - name: Upload Artifact debug firmware
-        uses: actions/upload-artifact@v3
+          mv ./Sensorbox2_ESP/.pio/build/release/firmware.bin ./Sensorbox2_ESP/distribution/firmware.debug.bin
+          mv ./Sensorbox2_ESP/.pio/build/release/firmware.signed.bin ./Sensorbox2_ESP/distribution/firmware.debug.signed.bin
+
+      # Combined upload for all artifacts using v4
+      - name: Upload all artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dists_zip
-          path: ./Sensorbox2_ESP/.pio/build/release/*.bin
+          path: |
+            ./Sensorbox2_ESP/distribution/*
           retention-days: 10
+          compression-level: 6
+          overwrite: true
 
     outputs:
       artifact: dists_zip
